@@ -39,8 +39,9 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme         = runtime.NewScheme()
+	setupLog       = ctrl.Log.WithName("setup")
+	watchNamespace string
 )
 
 func init() {
@@ -68,9 +69,24 @@ func main() {
 	flag.DurationVar(&k8sdDialTimeout, "k8sd-dial-timeout-duration", 60*time.Second,
 		"Duration that the proxy client waits at most to establish a connection with k8sd")
 
+	flag.StringVar(
+		&watchNamespace,
+		"namespace",
+		"",
+		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.",
+	)
+
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+
+	var watchNamespaces map[string]cache.Config
+	if watchNamespace != "" {
+		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
+		watchNamespaces = map[string]cache.Config{
+			watchNamespace: {},
+		}
+	}
 
 	ctx := ctrl.SetupSignalHandler()
 
@@ -85,7 +101,8 @@ func main() {
 		LeaderElection:   enableLeaderElection,
 		LeaderElectionID: "6b2b21b1.k8s.io",
 		Cache: cache.Options{
-			SyncPeriod: &syncPeriod,
+			SyncPeriod:        &syncPeriod,
+			DefaultNamespaces: watchNamespaces,
 		},
 		Controller: config.Controller{
 			// TODO: avoid duplicate controller names.
