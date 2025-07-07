@@ -112,43 +112,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.CK8sConfigReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("CK8sConfig"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CK8sConfig")
-		os.Exit(1)
-	}
-
-	ctrMachineLogger := ctrl.Log.WithName("controllers").WithName("Machine")
-	if err = (&controllers.InPlaceUpgradeReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrMachineLogger,
-		Scheme:          mgr.GetScheme(),
-		K8sdDialTimeout: k8sdDialTimeout,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Machine")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.CertificatesReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Certificates"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Certificates")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.OrchestratedInPlaceUpgradeController{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("OrchestratedInPlaceUpgrade"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OrchestratedInPlaceUpgrade")
-		os.Exit(1)
-	}
-
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&bootstrapv1.CK8sConfig{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "CK8sConfig")
@@ -156,6 +119,43 @@ func main() {
 		}
 		if err = (&bootstrapv1.CK8sConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "CK8sConfigTemplate")
+			os.Exit(1)
+		}
+	} else {
+		if err = (&controllers.CK8sConfigReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("CK8sConfig"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "CK8sConfig")
+			os.Exit(1)
+		}
+
+		ctrMachineLogger := ctrl.Log.WithName("controllers").WithName("Machine")
+		if err = (&controllers.InPlaceUpgradeReconciler{
+			Client:          mgr.GetClient(),
+			Log:             ctrMachineLogger,
+			Scheme:          mgr.GetScheme(),
+			K8sdDialTimeout: k8sdDialTimeout,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Machine")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.CertificatesReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("Certificates"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Certificates")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.OrchestratedInPlaceUpgradeController{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("OrchestratedInPlaceUpgrade"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "OrchestratedInPlaceUpgrade")
 			os.Exit(1)
 		}
 	}
