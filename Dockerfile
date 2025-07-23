@@ -16,7 +16,7 @@
 
 # Build the manager binary
 # Run this with docker build --build-arg builder_image=<golang:x.y.z>
-ARG builder_image
+ARG BUILDER_GOLANG_VERSION
 
 # Build architecture
 ARG ARCH
@@ -25,13 +25,28 @@ ARG ARCH
 # It's an invalid finding since the image is explicitly set in the Makefile.
 # https://github.com/hadolint/hadolint/wiki/DL3006
 # hadolint ignore=DL3006
-FROM ${builder_image} as builder
+FROM --platform=$TARGETPLATFORM us-docker.pkg.dev/palette-images/build-base-images/golang:${BUILDER_GOLANG_VERSION}-alpine as toolchain
+ARG goproxy=https://proxy.golang.org
+ENV GOPROXY=$goproxy
+
+# FIPS
+ARG CRYPTO_LIB
+ARG CGO_ENABLED_FLAG=${CRYPTO_LIB:+0}
+ENV GOEXPERIMENT=${CRYPTO_LIB:+boringcrypto}
+
+FROM toolchain as builder
 WORKDIR /workspace
 
+ARG CRYPTO_LIB
+ENV GOEXPERIMENT=${CRYPTO_LIB:+boringcrypto}
+
 # Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
-ARG goproxy=off
-# Run this with docker build --build-arg package=./controlplane/kubeadm or --build-arg package=./bootstrap/kubeadm
-ENV GOPROXY=$goproxy
+#ARG goproxy=off
+## Run this with docker build --build-arg package=./controlplane/kubeadm or --build-arg package=./bootstrap/kubeadm
+#ENV GOPROXY=$goproxy
+
+RUN apk update
+RUN apk add git gcc g++ curl binutils-gold
 
 # Copy the Go Modules manifests
 COPY go.mod go.mod
@@ -39,7 +54,8 @@ COPY go.sum go.sum
 
 # Cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
-RUN --mount=type=cache,target=/go/pkg/mod \
+RUN --mount=type=cache,target=/root/.local/share/golang \
+    --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
 # Copy the sources
@@ -51,11 +67,19 @@ ARG ARCH
 ARG ldflags
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
-RUN --mount=type=cache,target=/root/.cache/go-build \
+RUN  --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
-    go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
-    -o manager ${package}
+    --mount=type=cache,target=/root/.local/share/golang \
+    if [ ${CRYPTO_LIB} ]; \
+    then \
+      GOARCH=${ARCH} go-build-fips.sh -a -o manager ${package};\
+    else \
+      GOARCH=${ARCH} go-build-static.sh -a -o manager ${package};\
+    fi
+
+RUN if [ "${CRYPTO_LIB}" ]; then assert-static.sh manager; fi
+RUN if [ "${CRYPTO_LIB}" ]; then assert-fips.sh manager; fi
+RUN scan-govulncheck.sh manager
 
 # Production image
 FROM gcr.io/distroless/static:nonroot

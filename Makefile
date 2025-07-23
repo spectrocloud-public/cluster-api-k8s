@@ -24,6 +24,13 @@ GO_VERSION ?= $(shell grep '^go ' go.mod | cut -d' ' -f2 | sed 's/\.0$$//')
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 
 ARCH ?= $(shell go env GOARCH)
+ALL_ARCH = amd64 arm64
+
+ALL_DOCKER_BUILD = bootstrap controlplane
+
+FIPS_ENABLE ?= ""
+BUILDER_GOLANG_VERSION ?= 1.23
+BUILD_ARGS = --build-arg CRYPTO_LIB=${FIPS_ENABLE} --build-arg BUILDER_GOLANG_VERSION=${BUILDER_GOLANG_VERSION}
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -149,6 +156,9 @@ dev-controlplane:
 
 ##@ release:
 
+SPECTRO_VERSION ?= 4.7.0
+TAG ?= spectro-${SPECTRO_VERSION}
+
 ## latest git tag for the commit, e.g., v0.3.10
 ## set to v0.0.0 if no tag is found
 RELEASE_TAG ?= $(shell git describe --abbrev=0 --tags 2>/dev/null || echo v0.0.0)
@@ -170,14 +180,15 @@ $(RELEASE_DIR):
 $(RELEASE_NOTES_DIR):
 	mkdir -p $(RELEASE_NOTES_DIR)/
 
-REGISTRY ?= ghcr.io/canonical/cluster-api-k8s
+#REGISTRY ?= ghcr.io/canonical/cluster-api-k8s
+REGISTRY ?= us-docker.pkg.dev/palette-images/palette/cluster-api-ck8s
 
 # Image URL to use all building/pushing image targets
-BOOTSTRAP_IMG_TAG ?= $(RELEASE_TAG)
+BOOTSTRAP_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
 BOOTSTRAP_IMG ?= $(REGISTRY)/bootstrap-controller
 
 # Image URL to use all building/pushing image targets
-CONTROLPLANE_IMG_TAG ?= $(RELEASE_TAG)
+CONTROLPLANE_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
 CONTROLPLANE_IMG ?= $(REGISTRY)/controlplane-controller
 
 go-vet:
@@ -246,7 +257,7 @@ generate-bootstrap-conversions: $(CONVERSION_GEN)
 
 .PHONY: docker-build-bootstrap
 docker-build-bootstrap-%:
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}-$*
+	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}-$*
 docker-build-bootstrap: manager-bootstrap docker-build-bootstrap-amd64 docker-build-bootstrap-arm64
 
 docker-build-bootstrap-e2e: manager-bootstrap
@@ -254,7 +265,7 @@ docker-build-bootstrap-e2e: manager-bootstrap
 
 # Push the bootstrap multiarch image
 .PHONY: docker-push-bootstrap
-docker-push-bootstrap-%: docker-build-bootstrap-%
+docker-push-bootstrap-%:
 	docker push ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-$*
 docker-push-bootstrap: docker-push-bootstrap-amd64 docker-push-bootstrap-arm64
 
@@ -336,7 +347,7 @@ generate-controlplane-conversions: $(CONVERSION_GEN)
 
 .PHONY: docker-build-controlplane
 docker-build-controlplane-%:
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${CONTROLPLANE_IMG_TAG}-$*
+	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${CONTROLPLANE_IMG_TAG}-$*
 docker-build-controlplane: manager-controlplane docker-build-controlplane-amd64 docker-build-controlplane-arm64
 
 docker-build-controlplane-e2e: manager-controlplane
@@ -344,7 +355,7 @@ docker-build-controlplane-e2e: manager-controlplane
 
 # Push the controlplane multiarch image
 .PHONY: docker-push-controlplane
-docker-push-controlplane-%: docker-build-controlplane-%
+docker-push-controlplane-%:
 	docker push ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-$*
 docker-push-controlplane: docker-push-controlplane-amd64 docker-push-controlplane-arm64
 
@@ -418,3 +429,15 @@ $(CONTROLLER_GEN): ## Build controller-gen from tools folder.
 
 $(CONVERSION_GEN): ## Build conversion-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
+
+.PHONY: docker-build-all
+docker-build-all: $(addprefix docker-build-,$(ALL_ARCH)) ## Build docker images for all architectures
+
+docker-build-%:
+	$(MAKE) ARCH=$* docker-build
+
+.PHONY: docker-build
+docker-build: ## Run docker-build-* targets for all the images
+	$(MAKE) ARCH=$(ARCH) $(addprefix docker-build-,$(ALL_DOCKER_BUILD))
+
+docker-push-all: docker-manifest-bootstrap docker-manifest-controlplane
