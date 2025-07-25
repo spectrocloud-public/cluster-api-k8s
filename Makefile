@@ -156,8 +156,8 @@ dev-controlplane:
 
 ##@ release:
 
-SPECTRO_VERSION ?= 4.7.0
-TAG ?= spectro-${SPECTRO_VERSION}
+SPECTRO_VERSION ?= 4.7.0-dev
+TAG ?= v0.4.2-spectro-${SPECTRO_VERSION}
 
 ## latest git tag for the commit, e.g., v0.3.10
 ## set to v0.0.0 if no tag is found
@@ -184,11 +184,11 @@ $(RELEASE_NOTES_DIR):
 REGISTRY ?= us-docker.pkg.dev/palette-images/palette/cluster-api-ck8s
 
 # Image URL to use all building/pushing image targets
-BOOTSTRAP_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
+#BOOTSTRAP_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
 BOOTSTRAP_IMG ?= $(REGISTRY)/bootstrap-controller
 
 # Image URL to use all building/pushing image targets
-CONTROLPLANE_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
+#CONTROLPLANE_IMG_TAG ?= $(RELEASE_TAG)-$(TAG)
 CONTROLPLANE_IMG ?= $(REGISTRY)/controlplane-controller
 
 go-vet:
@@ -231,7 +231,7 @@ uninstall-bootstrap: manifests-bootstrap
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy-bootstrap: manifests-bootstrap
-	cd bootstrap/config/manager && $(KUSTOMIZE) edit set image controller=${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}
+	cd bootstrap/config/manager && $(KUSTOMIZE) edit set image controller=${BOOTSTRAP_IMG}:${TAG}
 	$(KUSTOMIZE) build bootstrap/config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
@@ -239,7 +239,7 @@ manifests-bootstrap: $(KUSTOMIZE) $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) paths=./bootstrap/... rbac:roleName=manager-role crd webhook output:crd:artifacts:config=bootstrap/config/crd/bases output:rbac:dir=bootstrap/config/rbac output:webhook:dir=bootstrap/config/webhook
 
 release-bootstrap:$(RELEASE_DIR) manifests-bootstrap ## Release bootstrap
-	cd bootstrap/config/manager && $(KUSTOMIZE) edit set image controller=${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}
+	cd bootstrap/config/manager && $(KUSTOMIZE) edit set image controller=${BOOTSTRAP_IMG}:${TAG}
 	$(KUSTOMIZE) build bootstrap/config/default > $(RELEASE_DIR)/bootstrap-components.yaml
 
 # Generate code
@@ -257,25 +257,25 @@ generate-bootstrap-conversions: $(CONVERSION_GEN)
 
 .PHONY: docker-build-bootstrap
 docker-build-bootstrap-%:
-	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}-$*
+	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${TAG}-$*
 docker-build-bootstrap: manager-bootstrap docker-build-bootstrap-amd64 docker-build-bootstrap-arm64
 
 docker-build-bootstrap-e2e: manager-bootstrap
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${BOOTSTRAP_IMG_TAG}
+	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${BOOTSTRAP_IMG}:${TAG}
 
 # Push the bootstrap multiarch image
 .PHONY: docker-push-bootstrap
 docker-push-bootstrap-%:
-	docker push ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-$*
+	docker push ${BOOTSTRAP_IMG}:$(TAG)-$*
 docker-push-bootstrap: docker-push-bootstrap-amd64 docker-push-bootstrap-arm64
 
 .PHONY: docker-manifest-bootstrap
 docker-manifest-bootstrap: docker-push-bootstrap
-	docker manifest rm ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG) || true
-	docker manifest create ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG) --amend ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-amd64 --amend ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-arm64
-	docker manifest annotate ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG) ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-amd64 --arch=amd64
-	docker manifest annotate ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG) ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)-arm64 --arch=arm64
-	docker manifest push ${BOOTSTRAP_IMG}:$(BOOTSTRAP_IMG_TAG)
+	docker manifest rm ${BOOTSTRAP_IMG}:$(TAG) || true
+	docker manifest create ${BOOTSTRAP_IMG}:$(TAG) --amend ${BOOTSTRAP_IMG}:$(TAG)-amd64 --amend ${BOOTSTRAP_IMG}:$(TAG)-arm64
+	docker manifest annotate ${BOOTSTRAP_IMG}:$(TAG) ${BOOTSTRAP_IMG}:$(TAG)-amd64 --arch=amd64
+	docker manifest annotate ${BOOTSTRAP_IMG}:$(TAG) ${BOOTSTRAP_IMG}:$(TAG)-arm64 --arch=arm64
+	docker manifest push ${BOOTSTRAP_IMG}:$(TAG)
 
 all-controlplane: manager-controlplane
 
@@ -288,8 +288,8 @@ test-controlplane: envtest generate-controlplane generate-controlplane-conversio
 docker-build-e2e: ## Run docker-build-* targets for all the images with settings to be used for the e2e tests
     # please ensure the generated image name matches image names used in the E2E_CONF_FILE
     # and it also match the image tags in bootstrap/config/default and controlplane/config/default
-	$(MAKE) BOOTSTRAP_IMG_TAG=dev docker-build-bootstrap-e2e
-	$(MAKE) CONTROLPLANE_IMG_TAG=dev docker-build-controlplane-e2e
+	$(MAKE) TAG=dev docker-build-bootstrap-e2e
+	$(MAKE) TAG=dev docker-build-controlplane-e2e
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) $(KUSTOMIZE) ## Run the end-to-end tests
@@ -321,7 +321,7 @@ uninstall-controlplane: manifests-controlplane
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy-controlplane: manifests-controlplane
-	cd controlplane/config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)
+	cd controlplane/config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLPLANE_IMG}:$(TAG)
 	$(KUSTOMIZE) build controlplane/config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
@@ -329,7 +329,7 @@ manifests-controlplane: $(KUSTOMIZE) $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) paths=./controlplane/... rbac:roleName=manager-role webhook crd output:crd:artifacts:config=controlplane/config/crd/bases output:rbac:dir=controlplane/config/rbac output:webhook:dir=controlplane/config/webhook
 
 release-controlplane: $(RELEASE_DIR) manifests-controlplane ## Release control-plane
-	cd controlplane/config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)
+	cd controlplane/config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLPLANE_IMG}:$(TAG)
 	$(KUSTOMIZE) build controlplane/config/default > $(RELEASE_DIR)/control-plane-components.yaml
 
 generate-controlplane: $(CONTROLLER_GEN)
@@ -347,25 +347,25 @@ generate-controlplane-conversions: $(CONVERSION_GEN)
 
 .PHONY: docker-build-controlplane
 docker-build-controlplane-%:
-	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${CONTROLPLANE_IMG_TAG}-$*
+	DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/$* ${BUILD_ARGS} --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$* --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${TAG}-$*
 docker-build-controlplane: manager-controlplane docker-build-controlplane-amd64 docker-build-controlplane-arm64
 
 docker-build-controlplane-e2e: manager-controlplane
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=${ARCH} --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${CONTROLPLANE_IMG_TAG}
+	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=${ARCH} --build-arg package=./controlplane/main.go --build-arg ldflags="$(LDFLAGS)" . -t ${CONTROLPLANE_IMG}:${TAG}
 
 # Push the controlplane multiarch image
 .PHONY: docker-push-controlplane
 docker-push-controlplane-%:
-	docker push ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-$*
+	docker push ${CONTROLPLANE_IMG}:$(TAG)-$*
 docker-push-controlplane: docker-push-controlplane-amd64 docker-push-controlplane-arm64
 
 .PHONY: docker-manifest-controlplane
 docker-manifest-controlplane: docker-push-controlplane
-	docker manifest rm ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG) || true
-	docker manifest create ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG) --amend ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-amd64 --amend ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-arm64
-	docker manifest annotate ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG) ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-amd64 --arch=amd64
-	docker manifest annotate ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG) ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)-arm64 --arch=arm64
-	docker manifest push ${CONTROLPLANE_IMG}:$(CONTROLPLANE_IMG_TAG)
+	docker manifest rm ${CONTROLPLANE_IMG}:$(TAG) || true
+	docker manifest create ${CONTROLPLANE_IMG}:$(TAG) --amend ${CONTROLPLANE_IMG}:$(TAG)-amd64 --amend ${CONTROLPLANE_IMG}:$(TAG)-arm64
+	docker manifest annotate ${CONTROLPLANE_IMG}:$(TAG) ${CONTROLPLANE_IMG}:$(TAG)-amd64 --arch=amd64
+	docker manifest annotate ${CONTROLPLANE_IMG}:$(TAG) ${CONTROLPLANE_IMG}:$(TAG)-arm64 --arch=arm64
+	docker manifest push ${CONTROLPLANE_IMG}:$(TAG)
 
 release: release-bootstrap release-controlplane
 	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
