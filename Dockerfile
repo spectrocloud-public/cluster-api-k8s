@@ -25,7 +25,7 @@ ARG ARCH
 # It's an invalid finding since the image is explicitly set in the Makefile.
 # https://github.com/hadolint/hadolint/wiki/DL3006
 # hadolint ignore=DL3006
-FROM --platform=$TARGETPLATFORM us-docker.pkg.dev/palette-images/build-base-images/golang:${BUILDER_GOLANG_VERSION}-alpine as toolchain
+FROM --platform=$TARGETPLATFORM us-central1-docker.pkg.dev/palette-images-dev/hardened-images/builder/golang:${BUILDER_GOLANG_VERSION}-alpine as toolchain
 ARG goproxy=https://proxy.golang.org
 ENV GOPROXY=$goproxy
 
