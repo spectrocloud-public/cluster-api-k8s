@@ -29,7 +29,7 @@ ALL_ARCH = amd64 arm64
 ALL_DOCKER_BUILD = bootstrap controlplane
 
 FIPS_ENABLE ?= ""
-BUILDER_GOLANG_VERSION ?= 1.23
+BUILDER_GOLANG_VERSION ?= 1.26.4
 BUILD_ARGS = --build-arg CRYPTO_LIB=${FIPS_ENABLE} --build-arg BUILDER_GOLANG_VERSION=${BUILDER_GOLANG_VERSION}
 
 # Use GOPROXY environment variable if set
