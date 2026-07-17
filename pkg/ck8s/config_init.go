@@ -91,12 +91,13 @@ func GenerateInitControlPlaneConfig(cfg InitControlPlaneConfig) (apiv1.Bootstrap
 	}
 
 	// annotations
-	out.ClusterConfig.Annotations = cfg.InitConfig.Annotations
-
-	// Since CAPI handles the lifecycle management of Kubernetes nodes, k8s-snap should only focus on
-	// cleaning up microcluster and files during upgrades.
-	if out.ClusterConfig.Annotations == nil {
-		out.ClusterConfig.Annotations = map[string]string{}
+	// Maps are reference types, so assigning cfg.InitConfig.Annotations directly would make
+	// both variables point to the same underlying map; any subsequent mutation of
+	// out.ClusterConfig.Annotations would then mutate the caller's map too. Copy into a
+	// fresh map so we only modify our local copy (PCP-7250).
+	out.ClusterConfig.Annotations = map[string]string{}
+	for k, v := range cfg.InitConfig.Annotations {
+		out.ClusterConfig.Annotations[k] = v
 	}
 
 	// features
