@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	apiv1_annotations "github.com/canonical/k8s-snap-api/api/v1/annotations"
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
+	apiv1_annotations "github.com/canonical/k8s-snap-api/api/v1/annotations"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
@@ -85,14 +85,16 @@ func GenerateInitControlPlaneConfig(cfg InitControlPlaneConfig) (apiv1.Bootstrap
 	}
 
 	// annotations
-	out.ClusterConfig.Annotations = cfg.InitConfig.Annotations
+	// Maps are reference types, so assigning cfg.InitConfig.Annotations directly would make
+	// both variables point to the same underlying map; the skip-* writes below would then
+	// mutate the caller's map too. Copy into a fresh map so we only modify our local copy.
+	out.ClusterConfig.Annotations = map[string]string{}
+	for k, v := range cfg.InitConfig.Annotations {
+		out.ClusterConfig.Annotations[k] = v
+	}
 
 	// Since CAPI handles the lifecycle management of Kubernetes nodes, k8s-snap should only focus on
 	// cleaning up microcluster and files during upgrades.
-	if out.ClusterConfig.Annotations == nil {
-		out.ClusterConfig.Annotations = map[string]string{}
-	}
-
 	trueStr := "true"
 	if _, ok := out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipCleanupKubernetesNodeOnRemove]; !ok {
 		out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipCleanupKubernetesNodeOnRemove] = trueStr
