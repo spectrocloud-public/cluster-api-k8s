@@ -26,11 +26,7 @@ import (
 
 // SetupWebhookWithManager will setup the webhooks for the CK8sControlPlane.
 func (c *CK8sConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(c).
-		WithDefaulter(&CK8sConfig{}).
-		WithValidator(&CK8sConfig{}).
-		Complete()
+	return nil
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1beta2-ck8sconfig,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ck8sconfigs,versions=v1beta2,name=validation.ck8sconfig.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
