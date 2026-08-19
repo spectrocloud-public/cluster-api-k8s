@@ -20,7 +20,7 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
-GO_VERSION ?= 1.26.5
+GO_VERSION ?= 1.26.6
 GO_CONTAINER_IMAGE ?= docker.io/library/golang:$(GO_VERSION)
 
 ARCH ?= $(shell go env GOARCH)
@@ -29,7 +29,7 @@ ALL_ARCH = amd64 arm64
 ALL_DOCKER_BUILD = bootstrap controlplane
 
 FIPS_ENABLE ?= ""
-BUILDER_GOLANG_VERSION ?= 1.26.5
+BUILDER_GOLANG_VERSION ?= 1.26.6
 BUILD_ARGS = --build-arg CRYPTO_LIB=${FIPS_ENABLE} --build-arg BUILDER_GOLANG_VERSION=${BUILDER_GOLANG_VERSION}
 
 # Use GOPROXY environment variable if set
