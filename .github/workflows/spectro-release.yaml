@@ -63,7 +63,7 @@ jobs:
         env:
           REGISTRY: ${{ env.LEGACY_REGISTRY }}
           GO_VERSION: 1.26.6
-          BUILDER_GOLANG_VERSION: 1.26.5
+          BUILDER_GOLANG_VERSION: 1.26.6
         run: |
           make docker-build-all
           make docker-push-all
@@ -73,7 +73,7 @@ jobs:
           FIPS_ENABLE: yes
           REGISTRY: ${{ env.FIPS_REGISTRY }}
           GO_VERSION: 1.26.6
-          BUILDER_GOLANG_VERSION: 1.26.5
+          BUILDER_GOLANG_VERSION: 1.26.6
         run: |
           make docker-build-all
           make docker-push-all
