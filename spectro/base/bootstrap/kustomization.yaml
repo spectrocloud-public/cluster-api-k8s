@@ -31,6 +31,14 @@ patches:
       value:
         - name: ENABLE_WEBHOOKS
           value: "false"
+- target:
+    kind: Deployment
+    name: controller-manager
+    namespace: system
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/1/args/1
+      value: --sync-period=2m
 
 # the following config is for teaching kustomize how to do var substitution
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
