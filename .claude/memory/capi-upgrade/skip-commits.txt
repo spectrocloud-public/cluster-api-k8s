@@ -1,0 +1,34 @@
+# explicit human skip decisions (SHA per line; # = comment)
+
+# reviewer-applied: target already at controller-runtime v0.23.3 with typed
+# webhook signatures (no more admission.CustomDefaulter/Validator with
+# runtime.Object arg) — fork's bump-to-v0.20.4 is a strict downgrade with
+# stale webhook plumbing. Verified: git show a264cd90:go.mod shows
+# controller-runtime v0.23.3; target's ck8sconfig_webhook.go uses new
+# `_ *CK8sConfig` signatures.
+adec40b9
+
+# reviewer-applied: target already contains the fork's PCP-6722 non-default
+# CNI CP-ready fix — same code path (`enableDefaultNetwork==false && replicas>0`
+# fallback breaking the k8sd-config initialization deadlock), same MAAS
+# controller comment. Verified: git show a264cd90:controlplane/controllers/ck8scontrolplane_controller.go
+# contains both branches (Initialized + Ready) from PCP-6722. See also
+# regwatch-risk.tsv for the parity-verify entry.
+122375ba
+
+# human-applied: defer to CVE Gate G. Gate G runs govulncheck on the executed
+# branch and derives target-compatible dep bumps as a remediation delta —
+# picking these fork-side bumps now would collide with target's newer baseline
+# and duplicate work Gate G already does.
+cac840ae  # grpc v1.80.0 → v1.82.1
+dd9205f2  # PCP-6722 CVE vuln bumps (M*)
+a42ff341  # PCP-6787 CVE vuln bumps (M*)
+
+# human-applied: cascade SKIPs — superseded by 90e1543c PICK-RESOLVE (final
+# Go 1.26.6 bump). These intermediate Go-toolchain bumps land redundantly
+# once the final bump is applied at execute. Listed explicitly for audit.
+f9fdfee8  # Go builder version (early bump superseded)
+3c6215a3  # Go 1.24.13 (superseded)
+41d153d1  # Go for build (superseded)
+5ff9002d  # PCP-6891 Go+vuln (superseded)
+facc2ecf  # PCP-7232 Go builder 1.26.5 (superseded by 90e1543c 1.26.6)
