@@ -37,3 +37,20 @@ f207d93f
 # container registry (us-docker.pkg.dev) rather than canonical's kubernetes-sigs
 # repos — preserving the fork's release semantics.
 b3398d6e
+
+# human-applied: PCP-4817 manifest-split overlays — fork-only spectro/base +
+# spectro/run.sh generator. Target has no spectro/ overlay tree, so these
+# are pure adds; PICK-RESOLVE lets the conflict-resolver land the overlays
+# and re-derive spectro/generated/** via `make manifests generate` on the
+# v1.13.2 baseline. Originally staged under known-commits.tsv as PICK-VERIFY
+# but engine's F4 policy forces those to NEEDS-DECISION — moved here.
+79576dd8  # PCP-4817 Manifest Generation (cascade root)
+e71debeb  # PCP-4817 Additional Fixes
+0d3289d3  # PCP-4817 sync-period base manifests
+90bd017a  # tolerations to CK8s deployments
+
+# human-applied: 526f280f cascade dependents. Called out in that SHA's
+# resolve note but listed here explicitly so the engine folds them into
+# PICK-RESOLVE (not NEEDS-DECISION).
+10e0483a  # PCP-4889 removes a line 526f280f adds (inseparable pair)
+fd330ce1  # golang alpine image path (cascade off 526f280f Dockerfile compound)

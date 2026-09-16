@@ -1,8 +1,11 @@
 # authoritative SHA<TAB>CAT<TAB>decision<TAB>note — populate on first run
 # CAT: F1/F3=upstreamed · F4=diverged/fork-only · M*=version/CVE/chore · REGEN=generated
 # decision: PICK · SKIP · PICK-RESOLVE · PICK-VERIFY · REGENERATE · ? (unknown)
-79576dd8	F4	PICK	human-applied: PCP-4817 Manifest Generation — fork-only generator (spectro/run.sh + spectro/base/**). Target has no equivalent; PICK the code, engine auto-regens spectro/generated/** at execute per GENERATED_PATHS. Engine will surface PICK-VERIFY at plan-time if upstream-changed paths overlap. Cascade root for e71debeb/0d3289d3/90bd017a.
-e71debeb	F4	PICK	human-applied: PCP-4817 Additional Fixes — companion tweaks to 79576dd8. Engine auto-derives PICK-VERIFY if needed; generated overlays regenerate at execute.
-0d3289d3	F4	PICK	human-applied: PCP-4817 sync-period base manifests — small overlay tweak on spectro/base. PICK the base kustomization change; regen the generated output at execute.
-90bd017a	F4	PICK	human-applied: tolerations to CK8s deployments — spectro/base overlay only. PICK the overlay, regen generated output.
+#
+# Note (2026-09-16): earlier rows here for 79576dd8/e71debeb/0d3289d3/90bd017a
+# were removed; engine's F4 policy forces those to NEEDS-DECISION regardless of
+# the declared decision. Instead they live in resolve-commits.txt as
+# PICK-RESOLVE — the conflict-resolver 3-way-merges the fork-only spectro/base
+# overlays onto the fresh v1.13.2 baseline at execute; generated paths
+# regenerate via `make manifests generate` per GENERATED_PATHS.
 
