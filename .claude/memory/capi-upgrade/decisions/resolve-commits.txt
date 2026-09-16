@@ -1,0 +1,5 @@
+# explicit PICK-RESOLVE overrides (SHA per line; # = comment)
+# A SHA listed here is force-picked at execute even when the reconcile engine
+# classified it NEEDS-DECISION due to a conflict. The conflict-resolver agent
+# 3-way merges (fork intent vs target code vs upstream evolution) at execute
+# time. Use sparingly and only after Gate-1 review.
