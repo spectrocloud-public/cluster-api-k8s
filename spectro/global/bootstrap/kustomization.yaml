@@ -70,6 +70,18 @@ patches:
         - op: replace
           path: /spec/template/spec/containers/0/args/1
           value: --enable-leader-election=false
+  - target:
+      kind: Deployment
+      name: controller-manager
+      namespace: system
+    patch: |-
+      - op: add
+        path: /spec/template/spec/tolerations
+        value:
+          - key: node-role.kubernetes.io/master
+            effect: NoSchedule
+          - key: node-role.kubernetes.io/control-plane
+            effect: NoSchedule
 
 # the following config is for teaching kustomize how to do var substitution
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
