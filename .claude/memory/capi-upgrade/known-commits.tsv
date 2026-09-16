@@ -1,1 +1,8 @@
 # authoritative SHA<TAB>CAT<TAB>decision<TAB>note — populate on first run
+# CAT: F1/F3=upstreamed · F4=diverged · M*=version/CVE/chore · X=fork-only feature/infra
+# decision: PICK · SKIP · PICK-RESOLVE · PICK-VERIFY · REGENERATE · ? (unknown)
+79576dd8	X	PICK-VERIFY	human-applied: PCP-4817 Manifest Generation — fork-only generator (spectro/run.sh + spectro/base/**). Target has no equivalent; PICK the code, engine auto-regens spectro/generated/** at execute per GENERATED_PATHS. Cascade root: pinning this decides e71debeb/0d3289d3/90bd017a.
+e71debeb	X	PICK-VERIFY	human-applied: PCP-4817 Additional Fixes — companion tweaks to 79576dd8. Same PICK-VERIFY handling; generated overlays regenerate at execute.
+0d3289d3	X	PICK-VERIFY	human-applied: PCP-4817 sync-period base manifests — small overlay tweak on spectro/base. PICK the base kustomization change; regen the generated output at execute.
+90bd017a	X	PICK-VERIFY	human-applied: tolerations to CK8s deployments — spectro/base overlay only. PICK the overlay, regen generated output.
+

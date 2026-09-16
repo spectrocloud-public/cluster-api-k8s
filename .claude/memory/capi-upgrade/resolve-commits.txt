@@ -11,3 +11,29 @@
 # would mutate the caller's map too. Conflict-resolver must preserve target's
 # newer surrounding structure while landing the fresh-map copy pattern.
 f207d93f
+
+# human-applied: PCP-4817 controller/webhook separation. Preserves fork's 2-pod
+# deployment architecture (separate webhook + controller managers) rather than
+# accept a single-manager regression. Conflict-resolver applies the split onto
+# target's v1beta2 types + v0.23.3 controller-runtime shape.
+29002e71
+
+# human-applied: fork-hardened Dockerfile + spectro-release.yaml + Makefile
+# bootstrap. Target ships a plain 2-stage Dockerfile; fork's compound
+# hardening (multi-stage build, spectro-release GH Action wiring, Makefile
+# bootstrap targets) must be preserved. Cascades: resolving this locks
+# 10e0483a (removes a line 526f280f adds — inseparable) and fd330ce1.
+# Intermediate Go-toolchain bumps are cascade-SKIPped once 90e1543c lands.
+526f280f
+
+# human-applied: Go 1.26.6 final bump beyond target's 1.25.0 baseline —
+# security requirement, must land at execute. Conflict-resolver merges the
+# builder/go.mod/deps set atop target's newer surrounding structure. Locks
+# 5 intermediate Go bumps (f9fdfee8/3c6215a3/41d153d1/5ff9002d/facc2ecf)
+# as SKIP-redundant (see skip-commits.txt).
+90e1543c
+
+# human-applied: fork's Makefile image-tag scheme targets the spectro
+# container registry (us-docker.pkg.dev) rather than canonical's kubernetes-sigs
+# repos — preserving the fork's release semantics.
+b3398d6e
