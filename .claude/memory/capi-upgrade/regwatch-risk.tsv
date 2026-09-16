@@ -1,3 +1,28 @@
 # durable Regression-Watch risk per SHA (survives re-plans; edits to the plan
 # record are wiped on the next planner run — set risk HERE instead)
 # format: SHA<TAB>L|M|H<TAB>optional note
+122375ba	M	SKIP-upstreamed. Fork's PCP-6722 CNI-ready fix reproduced at target verbatim (MAAS-controller comment + enableDefaultNetwork branch). Verify at Gate 2 that target's initialization semantics match on all cloud providers (not just MAAS).
+adec40b9	L	SKIP-upstreamed. Target on controller-runtime v0.23.3 with typed webhook signatures — fully forward-compatible past fork's v0.20.4 target. Confirm no palette/downstream code relies on v0.20.4-specific behavior.
+f207d93f	M	PICK-RESOLVE. Real behavior fix (shared-map-reference bug on ck8sconfig annotations) absent from target. Conflict-resolver must preserve target's newer annotation-handling structure while applying the fresh-map copy pattern. High regression risk if lost.
+29002e71	H	NEEDS-DECISION. PCP-4817 webhook/controller separation is the fork's core deployment architecture — 2 pods, separate webhook binary. Target is single-manager. Losing this = deployment-model regression. Requires explicit human sign-off; conflict-resolver alone will not preserve the semantic split.
+79576dd8	H	NEEDS-DECISION (MIXED). Initial spectro-manifest bootstrap (spectro/base, spectro/global, spectro/generated, spectro/run.sh). All fork-only paths. Dropping = losing kustomize overlay chain feeding vendorcrd-sync. Requires human split: regen spectro/generated at execute, pick base/global/run.sh as-is.
+e71debeb	M	NEEDS-DECISION (MIXED). Follow-up manifest fixes over 79576dd8. Same split treatment; risk mostly proportional to 79576dd8's disposition.
+0d3289d3	M	NEEDS-DECISION (MIXED). Sync-period tweaks to base manifests — real fork-tuning. Human split; dropping = losing kustomize reconcile-period overlay.
+90bd017a	M	NEEDS-DECISION (MIXED). Tolerations for CK8s deployments — real fork behavior. Human split.
+991aa7c0	L	PICK-VERIFY. Watch-namespace change on bootstrap/controlplane main.go. Target's main.go was rewritten by upstream "Bump CAPI to v1.13.2" — verify the fork's WATCH_NAMESPACE env plumbing still applies against target's post-bump manager setup.
+526f280f	H	NEEDS-DECISION. Compound bootstrap: adds fork-only spectro-release.yaml + fork-only hardened multi-stage Dockerfile (palette-images/build-base-images golang alpine toolchain) + Makefile customization + tiny go.mod nudge. Target Dockerfile is plain 2-stage — fork's hardened toolchain must be preserved. If synthesized as a single "spectro-release-bootstrap" commit, the paired 10e0483a govulncheck-removal is redundant.
+b3398d6e	M	NEEDS-DECISION. Makefile image-tag scheme rewrite (fork's spectro registry paths vs target's canonical). Real fork customization; requires manual reconciliation with target's newer Makefile structure.
+10e0483a	L	NEEDS-DECISION. Dockerfile govulncheck-removal. In isolation from target it's a no-op (target has no govulncheck), but on top of 526f280f's hardened Dockerfile the removal IS needed. Tie disposition to 526f280f: if 526f280f is synthesized without govulncheck, SKIP this.
+dd9205f2	L	NEEDS-DECISION (M*). go.mod/sum-only CVE bump. Target at v1.13.2 baseline has substantially newer deps. CVE gate G post-execute will re-scan and remediate remaining vulnerabilities.
+a42ff341	L	NEEDS-DECISION (M*). go.mod/sum-only CVE bump. Same treatment as dd9205f2 — likely fully superseded by target's v1.13.2 baseline plus CVE gate G.
+5ff9002d	L	NEEDS-DECISION (M*). Compound Go/CVE bump touching fork-only spectro-release.yaml + go.mod. Intermediate Go bump superseded by 90e1543c's final 1.26.6; go.mod dep hunks superseded by target baseline + CVE gate.
+f9fdfee8	L	NEEDS-DECISION (M*). Go 1.24.12 pin on fork-only spectro-release.yaml. Intermediate; superseded by 90e1543c (Go 1.26.6). Safe SKIP if 90e1543c is picked.
+3c6215a3	L	NEEDS-DECISION (M*). Go 1.24.13 pin, intermediate; superseded by 90e1543c.
+41d153d1	L	NEEDS-DECISION (M*). Go workflow bump, intermediate; superseded by 90e1543c.
+fd330ce1	M	NEEDS-DECISION (M*). Dockerfile alpine image path change (fork-only hardened base). Depends on 526f280f resolution — if the fork Dockerfile is picked/synthesized as-of-source, this is folded in.
+facc2ecf	L	NEEDS-DECISION (F4?). Go 1.26.5 bump on spectro-release.yaml + Makefile. Intermediate; superseded by 90e1543c (Go 1.26.6).
+90e1543c	H	NEEDS-DECISION (M*). FINAL Go 1.26.6 bump — real value beyond target's Go 1.25.0. Fork's shipped Go version. If not picked or synthesized elsewhere, the fork REGRESSES to Go 1.25.0. High risk of losing 1.26.6 baseline; requires explicit human sign-off on the Go version target.
+cac840ae	M	NEEDS-DECISION (M*). Fork bumps grpc to v1.82.1; target still at v1.80.0. Real CVE-remediation value the target does not yet carry. If not picked, CVE gate G must catch this; otherwise regression on grpc-CVE posture.
+347a119b	L	PICK auto (fork-only CODEOWNERS). Duplicate subject with 0f9fa4f7 — both add/edit the same file; verify the two commits sequence cleanly (or coalesce).
+0f9fa4f7	L	PICK auto (fork-only CODEOWNERS follow-up). See 347a119b note.
+ca8a59b6	L	PICK auto (fork-only disable-host-services.sh). Cloud-init helper, no target overlap. Safe.

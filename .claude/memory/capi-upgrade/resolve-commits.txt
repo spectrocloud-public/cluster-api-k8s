@@ -3,3 +3,11 @@
 # classified it NEEDS-DECISION due to a conflict. The conflict-resolver agent
 # 3-way merges (fork intent vs target code vs upstream evolution) at execute
 # time. Use sparingly and only after Gate-1 review.
+
+# reviewer-applied: fork's PCP-7250 map-reference bug fix on pkg/ck8s/config_init.go
+# is NOT present at target — target still writes `out.ClusterConfig.Annotations = cfg.InitConfig.Annotations`
+# (shared map reference) which the fork explicitly fixed by copying into a fresh
+# map. Skipping this would REGRESS: subsequent `skip-*` annotation writes on `out`
+# would mutate the caller's map too. Conflict-resolver must preserve target's
+# newer surrounding structure while landing the fresh-map copy pattern.
+f207d93f
