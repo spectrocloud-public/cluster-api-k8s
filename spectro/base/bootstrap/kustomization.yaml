@@ -22,6 +22,15 @@ patches:
   patch: |-
       - op: remove
         path: /spec/template/spec/serviceAccountName
+- target:
+    kind: Deployment
+    name: controller-manager
+  patch: |-
+    - op: add
+      path: /spec/template/spec/containers/1/env
+      value:
+        - name: ENABLE_WEBHOOKS
+          value: "false"
 
 # the following config is for teaching kustomize how to do var substitution
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.

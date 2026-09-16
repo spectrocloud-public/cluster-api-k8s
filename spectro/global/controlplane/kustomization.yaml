@@ -56,6 +56,20 @@ patches:
     patch: |-
       - op: remove
         path: /spec/template/spec/serviceAccountName
+  - path: delete-namespace.yaml
+    target:
+      kind: Namespace
+      name: system
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: controller-manager
+      namespace: system
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/args/1
+        value: --enable-leader-election=false
 
 # the following config is for teaching kustomize how to do var substitution
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
