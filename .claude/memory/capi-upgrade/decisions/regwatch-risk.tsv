@@ -1,0 +1,3 @@
+# durable Regression-Watch risk per SHA (survives re-plans; edits to the plan
+# record are wiped on the next planner run — set risk HERE instead)
+# format: SHA<TAB>L|M|H<TAB>optional note
