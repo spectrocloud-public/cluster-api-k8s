@@ -157,7 +157,7 @@ dev-controlplane:
 ##@ release:
 
 SPECTRO_VERSION ?= 4.7.0-dev
-TAG ?= v0.4.2-spectro-${SPECTRO_VERSION}
+TAG ?= v1.13.2-fork-spectro-${SPECTRO_VERSION}
 
 ## latest git tag for the commit, e.g., v0.3.10
 ## set to v0.0.0 if no tag is found
