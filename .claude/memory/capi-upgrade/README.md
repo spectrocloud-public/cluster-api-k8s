@@ -1,38 +1,49 @@
-# cabpck-cacpck — CAPI Upgrade memory (Protocol U)
+# CAPx upgrade — this fork's memory (read this first)
 
-Per-repo state for the CAPI-upgrade reconcile engine
-(`spectro-capx-upgrade:capi-repo-upgrade`).
+This directory is the **only** CAPx content that lives in this fork — its **config, human decision
+inputs, notes, and engine-generated records**, in four role-based folders. The engine, skills, and
+agents are **not** here; they come from the `spectro-capx-upgrade` plugin (skill `capi-repo-upgrade`).
 
-## Layout
+> **Not onboarded yet?** Create `conf/capi-upgrade.conf` with at least `UPSTREAM_URL`, `PROVIDER`,
+> `SPECTRO_SRC`. Everything in `runtime/` is generated for you; `decisions/` you fill in at review time.
 
-- `conf/capi-upgrade.conf` — identity, sources, classifier inputs, integration tail
-- `decisions/known-commits.tsv` — authoritative SHA→category (+ optional decision col)
-- `decisions/skip-commits.txt` — explicit human skip list
-- `decisions/resolve-commits.txt` — explicit PICK-RESOLVE overrides
-- `decisions/regwatch-risk.tsv` — durable Regression-Watch risk (survives re-plans)
-- `notes/`, `runtime/` — free-form + generated artifacts
+## Layout — four folders by role
 
-## First cycle — fresh integration line
+```
+.claude/memory/capi-upgrade/
+├── conf/       — repo config you set ONCE (committed)
+│   ├── capi-upgrade.conf          UPSTREAM_URL · PROVIDER · SPECTRO_SRC · CORE_CAPI · patterns · IMAGES · CLOUD · CBT_FEATURE · VENDORCRD
+│   ├── expected-test-failures.tsv (optional) tests that fail BY DESIGN — used by the UT gate
+│   └── env-failure-patterns.txt   (optional) infra/env failure patterns — used by the UT gate
+├── decisions/  — Gate-1 inputs you EDIT each cycle; reviewed & approved in the Plan PR (→ Jira)
+│   ├── skip-commits.txt           SHAs to SKIP (drop)
+│   ├── resolve-commits.txt        SHAs to force-pick as PICK-RESOLVE
+│   ├── known-commits.tsv          authoritative  <sha> <category> [decision]
+│   └── regwatch-risk.tsv          durable Regression-Watch risk  <sha> <L|M|H> [note]
+├── notes/      — human prose (committed), not read by the engine
+│   ├── ledger.md                  running upgrade notes for this fork
+│   └── parity/<version>-parity.md parity notes for commits skipped-as-upstreamed
+└── runtime/    — ENGINE-GENERATED · do NOT hand-edit (committed as the plan artifact)
+    ├── summary.json               machine plan (pins S/T/F SHAs + new_branch)
+    ├── plan-latest.json           the FROZEN plan Gate-1 approves and execute replays
+    └── <ts>-PLAN|APPLY-*.md        per-run records
+```
 
-The previous `spectro-master` (v0.4.2 / palette 4.10.0 line) was archived
-server-side as `origin/archive-spectro-master-4.10.0`. The new
-`origin/spectro-master` starts fresh at CAPI v1.13.2 (v1beta1→v1beta2 base,
-same commit as `origin/capi-bump` = canonical/cluster-api-k8s#236 HEAD; a
-durable copy `origin/capi-v1.13.2-base` is pinned so the target survives
-that PR's lifecycle). Essential spectro commits (webhook splits first, then
-other essentials, then feature-specific tweaks) are cherry-picked onto this
-fresh baseline in a curated order over time.
+## What goes where (the question everyone asks)
 
-- **Source** (`SPECTRO_SRC`): `origin/archive-spectro-master-4.10.0` — the
-  archive is enumerated by the reconcile engine as the pool of candidate
-  commits; humans curate the priority.
-- **Target**: local tag `v1.13.2` at `origin/capi-v1.13.2-base` HEAD. If
-  canonical later publishes a real `v1.13.2` tag at the same SHA (they will
-  if PR #236 merges as-is) the local tag lines up.
+- **You edit:** `conf/` (once) and `decisions/` (each cycle, during Gate-1 review).
+- **The engine writes:** everything in `runtime/` — never hand-edit it.
+- **Pushed to the Plan PR (linked in Jira):** the whole dir is committed by `capi-plan-pr.sh`; what a
+  reviewer actually approves is `decisions/*` together with the frozen `runtime/plan-latest.json`.
+- **`notes/`** is free-form context — nothing consumes it.
 
-## Review reference
+## Canonical definitions
 
-Every commit on `origin/archive-spectro-master-4.10.0` is a candidate for
-this cycle. The planner surfaces each with a PICK/PICK-VERIFY/SKIP/NEEDS-
-DECISION verdict — treat those as suggestions, not the final priority.
-Essential first (webhook splits), then others as required.
+Terms + full engine behavior live in the `capi-repo-upgrade` skill's `references/glossary.md`,
+`SKILL.md`, and `DISCOVERED-INTERFACES.md` (in the `spectro-capx-upgrade` plugin).
+
+## How it runs (quick)
+
+plan (read-only) → **Gate 1** (edit `decisions/`, add `luma/approved`) → execute
+(creates `spectro-v<target>-master`) → **Gate 2** (a maintainer merges).
+Single fork: `/capx-upgrade <target>`. Whole fleet: Luma's `capi-fleet` coordinator.
