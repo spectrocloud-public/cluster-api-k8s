@@ -1,3 +1,3 @@
-# durable Regression-Watch risk per SHA (survives re-plans; edits to the plan
+# ── INPUT (Gate-1, you edit) — Regression-Watch risk: <sha> <L|M|H> [note]. unset=REVIEW (blocks execute); High=sign-off. '#' = comment. See ../README.md ──
 # record are wiped on the next planner run — set risk HERE instead)
 # format: SHA<TAB>L|M|H<TAB>optional note

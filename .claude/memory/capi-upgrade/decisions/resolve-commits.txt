@@ -1,4 +1,4 @@
-# explicit PICK-RESOLVE overrides (SHA per line; # = comment)
+# ── INPUT (Gate-1, you edit) — SHAs to force-pick as PICK-RESOLVE (3-way-merged at execute). One per line; '#' = comment. See ../README.md ──
 # A SHA listed here is force-picked at execute even when the reconcile engine
 # classified it NEEDS-DECISION due to a conflict. The conflict-resolver agent
 # 3-way merges (fork intent vs target code vs upstream evolution) at execute
