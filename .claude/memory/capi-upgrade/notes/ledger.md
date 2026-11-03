@@ -9,4 +9,4 @@
   minProperties:1 on machineTemplate.metadata without omitzero).
 - Execute-time fork fix: metadata.yaml release series 0.7 -> contract v1beta2 (upstream lists "v1beta3").
 - 36a7693 REGENERATE: upstream already at controller-gen v0.21.0; re-derive spectro/generated.
-- 5462415/a962eb3 PICK: all dep bumps are >= upstream (no downgrades); carry Go 1.26.7 release pins.
+- 5462415/a962eb3 PICK-RESOLVE: conflict on go.mod/go.sum vs T; resolve = per-module max(fork, T) (all fork bumps >= T, no downgrades) + keep Go 1.26.7 release pins; go mod tidy.
