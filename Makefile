@@ -29,7 +29,7 @@ ALL_ARCH = amd64 arm64
 ALL_DOCKER_BUILD = bootstrap controlplane
 
 FIPS_ENABLE ?= ""
-BUILDER_GOLANG_VERSION ?= 1.23
+BUILDER_GOLANG_VERSION ?= 1.26.7
 BUILD_ARGS = --build-arg CRYPTO_LIB=${FIPS_ENABLE} --build-arg BUILDER_GOLANG_VERSION=${BUILDER_GOLANG_VERSION}
 
 # Use GOPROXY environment variable if set
@@ -158,7 +158,7 @@ dev-controlplane:
 ##@ release:
 
 SPECTRO_VERSION ?= 4.7.0-dev
-TAG ?= v1.13.2-fork-spectro-${SPECTRO_VERSION}
+TAG ?= v1.13.4-fork-spectro-${SPECTRO_VERSION}
 
 ## latest git tag for the commit, e.g., v0.3.10
 ## set to v0.0.0 if no tag is found
