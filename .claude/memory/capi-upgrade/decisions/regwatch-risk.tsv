@@ -1,3 +1,15 @@
 # ── INPUT (Gate-1, you edit) — Regression-Watch risk: <sha> <L|M|H> [note]. unset=REVIEW (blocks execute); High=sign-off. '#' = comment. See ../README.md ──
 # record are wiped on the next planner run — set risk HERE instead)
 # format: SHA<TAB>L|M|H<TAB>optional note
+# reviewer-applied (PCP-7766 plan-review r1) — capi-plan-reviewer adversarial regression audit
+458fa8b9	H	SKIP correct (superseded by canonical#239/#240/#256) but adopting #240 = Axis-2 contract migration: CRD label v1beta1:v1beta1_v1beta2 -> v1beta2:v1beta2_v1beta3, storage v1beta2->v1beta3, conversion webhook on every read, status drift (readyReplicas=Machine Ready; upToDateReplicas=node-Ready count not spec-match; v1beta2-view unavailableReplicas always 0, ready=readyReplicas>0). Spec schemas identical => no spec-driven rollout. Human sign-off + in-place no-repave CBT from 4.10.4 (UID equality)
+a264cd90	L	generated CRDs/deepcopy re-derived from T; controlplane+bootstrap rbac role.yaml S==T byte-identical; remainder e2e/test-only
+7f14a99e	L	--namespace flag + cache.DefaultNamespaces 3-way-merges clean onto T bootstrap+controlplane main.go; same intent as S
+a34d16ab	M	3-way merge onto T clean and correct: webhook pod (ENABLE_WEBHOOKS!=false) registers v1beta2+v1beta3 webhooks and serves /convert; controller pod controllers-only. DEPENDS on 9eac332 PICK (ENABLE_WEBHOOKS=false on base). Conversion now on read path: CBT must cover CRD/webhook rollout ordering
+1f998988	L	fork CICD/Dockerfile/Makefile; upstream Dockerfile unchanged a264cd9..T; Makefile 3-way merge clean
+54624153	H	max(fork,T) resolve is right vs T (and go directive must stay T 1.26.7, not fork 1.26.6) BUT shipped v1.13.2-fork-spectro-4.10.{2,3,4} are on spectro-release-4.10 with commits NOT in S (a28251c PS-3017, e7f0a74 PS-3055 go 1.26.10 stdlib CVEs, 8e2e3c0 PS-3153): go 1.26.10, x/crypto 0.58.0, x/net 0.62.0, x/sys 0.49.0, x/text 0.43.0, x/tools 0.51.0, x/mod 0.41.0, x/sync 0.24.0, x/term 0.47.0. Executing from S regresses those CVE fixes. Human: forward-port to spectro-master + re-freeze S, or record them as the CVE-gate (G) floor
+ddde6e01	L	Makefile image-tag vars; merge clean; TAG refreshed by BUILD_VARS to v1.13.4-fork-spectro-*
+ff5d4956	L	fresh-map copy merges clean onto T pkg/ck8s/config_init.go (T still assigns the map by reference)
+658dd334	M	original v1beta2 tag is a harmless no-op on T (v1beta2 embeds core/v1beta1 ObjectMeta, no minProperties). Real fix = approved execute-time v1beta3 omitzero delta: v1beta2 writes validate vs v1beta2 schema; exposure is v1beta3 writers + conversion output (metadata: {}) on mgmt clusters without CRD validation ratcheting. T2: create+patch via both versions
+f974bfde	L	Makefile TAG fork suffix; merge clean
+a962eb3c	L	patch-equivalent to 68ad79e (shipped in 4.10.1); every module bump >= T; conflicts are chained on 5462415 - resolve in order
