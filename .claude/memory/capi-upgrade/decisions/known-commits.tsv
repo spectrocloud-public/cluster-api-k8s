@@ -1,0 +1,27 @@
+# ── INPUT (Gate-1, you edit) — authoritative SHA->category map: <sha> <category> [decision]. '#' = comment. See ../README.md ──
+# PCP-7766 (target v1.13.4 = canonical/main 25b67ac, local-only tag) — proposed at plan, approved at Gate 1
+458fa8b9	F1	SKIP
+a264cd90	F1	SKIP
+6e1d824d	F2	PICK
+# reviewer-applied (PCP-7766 plan-review r1): 9eac332/38bfeac/ca50d75 touch ONLY overlay SOURCES
+# (spectro/{base,global}/*/kustomization.yaml, delete-namespace.yaml) and zero spectro/generated files.
+# They were REGEN only because conf GENERATED_PATHS matches spectro/base|spectro/global. Same reasoning as
+# 6e1d824 (F2 PICK): overlays are source. Left as REGENERATE they are never cherry-picked, so spectro/run.sh
+# re-derives spectro/generated WITHOUT: ENABLE_WEBHOOKS=false on the base (controller) Deployment (9eac332;
+# without it a34d16a's split runs the per-cluster pod webhook-only = no CK8s reconcilers), global
+# --enable-leader-election=false + delete-namespace (9eac332), --sync-period=2m (38bfeac), CP tolerations
+# (ca50d75). Shared rules.tsv agrees: `path spectro/ -> PICK`. Fork-only files, apply in S order -> clean.
+9eac332a	F2	PICK
+38bfeac8	F2	PICK
+ca50d75c	F2	PICK
+# 36a7693 REGENERATE execute-time requirement (reviewer note): the Makefile half is superseded (T already
+# CONTROLLER_GEN_VER v0.21.0). spectro/generated is NOT produced by `make generate manifests` — the executor
+# must run `mkdir -p spectro/generated && touch spectro/generated/.gitkeep && (cd spectro && ./run.sh)`
+# (kustomize) AFTER the overlay PICKs, and commit the 4 files palette vendorcrd-sync pulls by URL
+# (spectro/generated/{bootstrap,controlplane}-{global,base}.yaml).
+36a7693f	REGEN	REGENERATE
+ce16a90e	M*	PICK
+3b657c0a	M*	PICK
+54624153	M*	PICK-RESOLVE
+a962eb3c	M*	PICK-RESOLVE
+658dd334	F4	PICK-RESOLVE
