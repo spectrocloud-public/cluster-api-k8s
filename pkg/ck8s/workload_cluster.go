@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
-	podv1 "k8s.io/kubernetes/pkg/api/v1/pod"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -124,6 +123,18 @@ func hasProvisioningMachine(machines collections.Machines) bool {
 	return false
 }
 
+// isPodReady returns true if the pod has a Ready condition with status True.
+// Local equivalent of k8s.io/kubernetes/pkg/api/v1/pod.IsPodReady, kept so the module does not
+// depend on k8s.io/kubernetes (GO-2025-3547, GO-2025-3521 have no fixed version).
+func isPodReady(pod *corev1.Pod) bool {
+	for _, c := range pod.Status.Conditions {
+		if c.Type == corev1.PodReady {
+			return c.Status == corev1.ConditionTrue
+		}
+	}
+	return false
+}
+
 // nodeHasUnreachableTaint returns true if the node has is unreachable from the node controller.
 func nodeHasUnreachableTaint(node corev1.Node) bool {
 	for _, taint := range node.Spec.Taints {
@@ -177,7 +188,7 @@ func (w *Workload) GetK8sdProxyForControlPlane(ctx context.Context, options k8sd
 			continue
 		}
 
-		if !podv1.IsPodReady(&pod) {
+		if !isPodReady(&pod) {
 			// if the Pod is not Ready, it won't be able to accept any k8sd API calls.
 			allErrors = append(allErrors, fmt.Errorf("pod '%s' is not Ready", pod.Name))
 			continue
