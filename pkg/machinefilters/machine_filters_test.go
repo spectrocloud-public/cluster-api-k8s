@@ -320,3 +320,29 @@ func TestMatchesKubernetesVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestHasDeletedNode(t *testing.T) {
+	withNodeHealthy := func(status metav1.ConditionStatus, reason string) *clusterv1.Machine {
+		return &clusterv1.Machine{Status: clusterv1.MachineStatus{Conditions: []metav1.Condition{
+			{Type: clusterv1.MachineNodeHealthyCondition, Status: status, Reason: reason},
+		}}}
+	}
+	tests := []struct {
+		name    string
+		machine *clusterv1.Machine
+		want    bool
+	}{
+		{name: "nil machine", machine: nil, want: false},
+		{name: "no NodeHealthy condition", machine: &clusterv1.Machine{}, want: false},
+		{name: "node deleted", machine: withNodeHealthy(metav1.ConditionFalse, clusterv1.MachineNodeDeletedReason), want: true},
+		{name: "node not ready", machine: withNodeHealthy(metav1.ConditionFalse, clusterv1.MachineNodeNotReadyReason), want: false},
+		{name: "node does not exist yet", machine: withNodeHealthy(metav1.ConditionUnknown, clusterv1.MachineNodeDoesNotExistReason), want: false},
+		{name: "node healthy", machine: withNodeHealthy(metav1.ConditionTrue, clusterv1.MachineNodeHealthyReason), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			g.Expect(HasDeletedNode(tt.machine)).To(Equal(tt.want))
+		})
+	}
+}
