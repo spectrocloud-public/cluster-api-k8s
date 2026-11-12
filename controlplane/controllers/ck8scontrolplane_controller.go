@@ -640,8 +640,18 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	if !conditions.IsTrue(kcp, clusterv1.MachinesReadyCondition) {
-		logger.Info("clusterv1.MachinesReadyCondition is false, reqeueing")
-		return ctrl.Result{Requeue: true}, nil
+		// A machine whose Node was deleted while the Machine still exists never becomes ready again.
+		// It is typically left behind by a scale down that removed the node from the cluster but was
+		// interrupted before deleting the Machine, e.g. because this controller ran on that node.
+		// Requeueing on it would block the very scale down that finishes removing it, so continue when
+		// such machines are the only ones not ready. Scale up, scale down and rollout run their own
+		// preflight checks before acting.
+		notReady, onlyDeletedNodes := notReadyMachinesHaveOnlyDeletedNodes(controlPlane.Machines)
+		if !onlyDeletedNodes {
+			logger.Info("clusterv1.MachinesReadyCondition is false, reqeueing")
+			return ctrl.Result{Requeue: true}, nil
+		}
+		logger.Info("clusterv1.MachinesReadyCondition is false only because of machines whose node was deleted, continuing", "machines", notReady.Names())
 	}
 
 	// Control plane machines rollout due to configuration changes (e.g. upgrades) takes precedence over other operations.

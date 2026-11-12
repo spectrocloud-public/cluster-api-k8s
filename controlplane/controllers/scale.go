@@ -42,6 +42,7 @@ import (
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
+	"github.com/canonical/cluster-api-k8s/pkg/machinefilters"
 )
 
 var ErrPreConditionFailed = errors.New("precondition check failed")
@@ -219,9 +220,23 @@ func preflightCheckCondition(machine *clusterv1.Machine, condition string) error
 	return nil
 }
 
+// notReadyMachinesHaveOnlyDeletedNodes returns the machines that are not ready, and whether there is
+// at least one of them and all of them have a deleted Node (see machinefilters.HasDeletedNode).
+func notReadyMachinesHaveOnlyDeletedNodes(machines collections.Machines) (collections.Machines, bool) {
+	notReady := machines.Filter(func(m *clusterv1.Machine) bool {
+		return !conditions.IsTrue(m, clusterv1.MachineReadyCondition)
+	})
+	return notReady, notReady.Len() > 0 && notReady.Filter(machinefilters.HasDeletedNode).Len() == notReady.Len()
+}
+
 func selectMachineForScaleDown(ctx context.Context, controlPlane *ck8s.ControlPlane, outdatedMachines collections.Machines) (*clusterv1.Machine, error) {
 	machines := controlPlane.Machines
+	// Machines whose Node was already deleted, but are not being deleted themselves, are left behind
+	// by an interrupted scale down: finish removing them first.
+	strandedMachines := machines.Filter(collections.And(machinefilters.HasDeletedNode, collections.Not(collections.HasDeletionTimestamp)))
 	switch {
+	case strandedMachines.Len() > 0:
+		machines = strandedMachines
 	case controlPlane.MachineWithDeleteAnnotation(outdatedMachines).Len() > 0:
 		machines = controlPlane.MachineWithDeleteAnnotation(outdatedMachines)
 	case controlPlane.MachineWithDeleteAnnotation(machines).Len() > 0:

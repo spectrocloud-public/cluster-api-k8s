@@ -20,9 +20,11 @@ import (
 	"reflect"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
@@ -112,4 +114,16 @@ func MatchesCK8sBootstrapConfig(machineConfigs map[string]*bootstrapv1.CK8sConfi
 
 		return reflect.DeepEqual(&machineConfig.Spec, kcpConfig)
 	}
+}
+
+// HasDeletedNode returns true for a machine whose Node was deleted while the Machine still exists,
+// as reported by the Cluster API Machine controller (NodeHealthy=False with reason NodeDeleted).
+// For a control plane machine this is typically left behind by a scale down that removed the node
+// from the cluster but was interrupted before it deleted the Machine.
+func HasDeletedNode(machine *clusterv1.Machine) bool {
+	if machine == nil {
+		return false
+	}
+	c := conditions.Get(machine, clusterv1.MachineNodeHealthyCondition)
+	return c != nil && c.Status == metav1.ConditionFalse && c.Reason == clusterv1.MachineNodeDeletedReason
 }
