@@ -1,6 +1,6 @@
 module github.com/canonical/cluster-api-k8s
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/canonical/k8s-snap-api v1.1.0
